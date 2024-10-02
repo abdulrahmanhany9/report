@@ -3,15 +3,17 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from pymongo import MongoClient
 from datetime import datetime, timedelta
-
+import os
+MONGO_URI = os.getenv('MONGO_URI')
+GMAIL_USER = os.getenv('GMAIL_USER')
+GMAIL_PASSWORD = os.getenv('GMAIL_PASSWORD')
 # MongoDB connection settings
-MONGO_URI = "mongodb+srv://api-application:9RMeQ08hTGRFtL2i@cluster0.jcitrgd.mongodb.net/alaadev?retryWrites=true&w=majority"  # Add your MongoDB URI here
 client = MongoClient(MONGO_URI)
 db = client['alaadev']
 
 # Gmail credentials
-GMAIL_USER = 'bedojobs@gmail.com'
-GMAIL_PASSWORD = 'bvkf indh uthn toel'
+
+
 
 
 # Function to send an email
