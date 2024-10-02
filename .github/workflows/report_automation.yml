@@ -2,7 +2,7 @@ name: Report Automation
 
 on:
   schedule:
-    - cron: '0 * * * *'  # Runs every hour
+    - cron: '* * * * *'  # Runs every hour
 
 jobs:
   run-script:
@@ -28,4 +28,4 @@ jobs:
           GMAIL_USER: ${{ secrets.GMAIL_USER }}
           GMAIL_PASSWORD: ${{ secrets.GMAIL_PASSWORD }}
         run: |
-          python /path/to/your/script.py  # Replace with the relative path to your script in the repository
+          python bedoReport.py  # Replace with the relative path to your script in the repository
