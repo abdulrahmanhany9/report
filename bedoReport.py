@@ -22,7 +22,7 @@ if not ((start_time <= current_time) or (current_time <= end_time)):
     exit()
 
 # If the time is within the range, the script continues
-print("Script is running within the allowed time range.")
+
 # MongoDB connection settings
 client = MongoClient(MONGO_URI)
 db = client['alaadev']
