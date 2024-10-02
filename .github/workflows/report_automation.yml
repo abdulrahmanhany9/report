@@ -3,7 +3,7 @@ name: Report Automation
 on:
   workflow_dispatch:  # Allows manual triggering
   schedule:
-    - cron: '* * * * *'  # Runs every minute for testing
+    - cron: '0 * * * *'  # Runs every minute for testing
 
 jobs:
   run-script:
