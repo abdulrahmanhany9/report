@@ -11,12 +11,18 @@ GMAIL_USER = os.getenv('GMAIL_USER')
 GMAIL_PASSWORD = os.getenv('GMAIL_PASSWORD')
 
 current_time = datetime.now().time()
-start_time = datetime.now().replace(hour=11, minute=0, second=0, microsecond=0).time()
-end_time = datetime.now().replace(hour=3, minute=0, second=0, microsecond=0).time()
 
-if not (start_time <= current_time or current_time <= end_time):
+# Define the start and end times
+start_time = time(11, 0)  # 11:00 AM
+end_time = time(3, 0)     # 3:00 AM (next day)
+
+# Check if the current time is within the allowed range
+if not ((start_time <= current_time) or (current_time <= end_time)):
     print("Script is running outside the allowed time range (11:00 AM to 3:00 AM). Exiting.")
     exit()
+
+# If the time is within the range, the script continues
+print("Script is running within the allowed time range.")
 # MongoDB connection settings
 client = MongoClient(MONGO_URI)
 db = client['alaadev']
