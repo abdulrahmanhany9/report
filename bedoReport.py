@@ -13,6 +13,7 @@ db = client['alaadev']
 GMAIL_USER = 'bedojobs@gmail.com'
 GMAIL_PASSWORD = 'bvkf indh uthn toel'
 
+
 # Function to send an email
 def send_report_email(html_content):
     try:
