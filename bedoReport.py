@@ -5,7 +5,6 @@ from pymongo import MongoClient
 from datetime import datetime, timedelta, time
 import os
 
-
 MONGO_URI = os.getenv('MONGO_URI')
 GMAIL_USER = os.getenv('GMAIL_USER')
 GMAIL_PASSWORD = os.getenv('GMAIL_PASSWORD')
@@ -21,16 +20,9 @@ if not ((start_time <= current_time) or (current_time <= end_time)):
     print("Script is running outside the allowed time range (11:00 AM to 3:00 AM). Exiting.")
     exit()
 
-# If the time is within the range, the script continues
-
 # MongoDB connection settings
 client = MongoClient(MONGO_URI)
 db = client['alaadev']
-
-# Gmail credentials
-
-
-
 
 # Function to send an email
 def send_report_email(html_content):
@@ -137,12 +129,17 @@ def generate_html_report(data):
     """
     return html_content
 
-
 # Function to fetch and process data
 def fetch_report_data(start_date, end_date):
-    # Today's period boundaries (11:00 AM today to 2:45 AM tomorrow)
-    today_start = datetime.now().replace(hour=11, minute=0, second=0, microsecond=0)
-    today_end = (today_start + timedelta(days=1)).replace(hour=2, minute=45, second=59, microsecond=999999)
+    # Calculate the start and end times for today's report
+    now = datetime.now()
+    if now.hour >= 11:
+        today_start = now.replace(hour=11, minute=0, second=0, microsecond=0)
+        today_end = (today_start + timedelta(days=1)).replace(hour=2, minute=45, second=59, microsecond=999999)
+    else:
+        # Before 11 AM, the reporting period is still part of the previous day
+        today_start = (now - timedelta(days=1)).replace(hour=11, minute=0, second=0, microsecond=0)
+        today_end = today_start + timedelta(hours=15, minutes=45)
 
     # Fetch full report data from the specified start_date to the end_date
     total_restaurants = db['restaurants'].count_documents({'isActive': True})
@@ -153,14 +150,11 @@ def fetch_report_data(start_date, end_date):
     total_orders_today = 0
     total_revenue = 0
     total_revenue_today = 0
-    restaurant_revenues = {}
-    restaurant_revenues_today = {}
 
     # Iterate over restaurants for both full and today's data
     restaurants = db['restaurants'].find({'isActive': True})
     for restaurant in restaurants:
         restaurant_id = restaurant['_id']
-        restaurant_name = restaurant['name']
 
         # Full report data (from start_date to end_date)
         orders = list(db['orders'].find({
@@ -179,9 +173,6 @@ def fetch_report_data(start_date, end_date):
         }))
         restaurant_total_orders_today = len(today_orders)
         restaurant_total_revenue_today = sum(order['orderAmount'] for order in today_orders if 'orderAmount' in order)
-
-        restaurant_revenues[restaurant_name] = restaurant_total_revenue
-        restaurant_revenues_today[restaurant_name] = restaurant_total_revenue_today
 
         total_orders += restaurant_total_orders
         total_orders_today += restaurant_total_orders_today
@@ -219,17 +210,14 @@ def run_report(start_date_str):
     # Set the end_date to now's period boundary (2:45 AM of the next day)
     now = datetime.now()
     if now.hour < 5:
-        # If it's before 3 AM, we're still in the previous day's reporting period
         end_date = now.replace(hour=2, minute=45, second=59, microsecond=999999)
     else:
-        # Otherwise, set the end date to 2:45 AM of the next day
         end_date = (now + timedelta(days=1)).replace(hour=2, minute=45, second=59, microsecond=999999)
 
     # Fetch the report data for the specified range
     data = fetch_report_data(start_date, end_date)
     html_report = generate_html_report(data)
     send_report_email(html_report)
-
 
 if __name__ == "__main__":
     start_date_str = "26-09-2024"
