@@ -4,9 +4,19 @@ from email.mime.text import MIMEText
 from pymongo import MongoClient
 from datetime import datetime, timedelta
 import os
+
+
 MONGO_URI = os.getenv('MONGO_URI')
 GMAIL_USER = os.getenv('GMAIL_USER')
 GMAIL_PASSWORD = os.getenv('GMAIL_PASSWORD')
+
+current_time = datetime.now().time()
+start_time = datetime.now().replace(hour=11, minute=0, second=0, microsecond=0).time()
+end_time = datetime.now().replace(hour=3, minute=0, second=0, microsecond=0).time()
+
+if not (start_time <= current_time or current_time <= end_time):
+    print("Script is running outside the allowed time range (11:00 AM to 3:00 AM). Exiting.")
+    exit()
 # MongoDB connection settings
 client = MongoClient(MONGO_URI)
 db = client['alaadev']
