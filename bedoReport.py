@@ -4,12 +4,13 @@ from email.mime.text import MIMEText
 from pymongo import MongoClient
 from datetime import datetime, timedelta, time
 import os
+import pytz
 
 MONGO_URI = os.getenv('MONGO_URI')
 GMAIL_USER = os.getenv('GMAIL_USER')
 GMAIL_PASSWORD = os.getenv('GMAIL_PASSWORD')
-
-current_time = datetime.now().time()
+egypt_tz = pytz.timezone('Africa/Cairo')
+current_time = datetime.now(egypt_tz).time()
 
 # Define the start and end times
 start_time = time(11, 0)  # 11:00 AM
@@ -121,7 +122,7 @@ def generate_html_report(data):
                 </div>
 
                 <div class="footer">
-                    <p>Generated on: {datetime.now().strftime('%d-%m-%Y %H:%M')}</p>
+                    <p>Generated on: {datetime.now(egypt_tz).strftime('%d-%m-%Y %H:%M')}</p>
                 </div>
             </div>
         </body>
@@ -132,7 +133,7 @@ def generate_html_report(data):
 # Function to fetch and process data
 def fetch_report_data(start_date, end_date):
     # Calculate the start and end times for today's report
-    now = datetime.now()
+    now = datetime.now(egypt_tz)
     if now.hour >= 11:
         today_start = now.replace(hour=11, minute=0, second=0, microsecond=0)
         today_end = (today_start + timedelta(days=1)).replace(hour=2, minute=45, second=59, microsecond=999999)
@@ -205,10 +206,10 @@ def fetch_report_data(start_date, end_date):
 def run_report(start_date_str):
     # Parse the start date string
     start_date = datetime.strptime(start_date_str, "%d-%m-%Y")
-    start_date = start_date.replace(hour=11, minute=0, second=0, microsecond=0)
+    start_date = egypt_tz.localize(start_date.replace(hour=11, minute=0, second=0, microsecond=0))
 
     # Set the end_date to now's period boundary (2:45 AM of the next day)
-    now = datetime.now()
+    now = datetime.now(egypt_tz)
     if now.hour < 5:
         end_date = now.replace(hour=2, minute=45, second=59, microsecond=999999)
     else:
