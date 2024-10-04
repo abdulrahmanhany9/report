@@ -159,10 +159,10 @@ def fetch_report_data(start_date, end_date):
 
         # Full report data (from start_date to end_date)
         orders = list(db['orders'].find({
-            'restaurant': restaurant_id,
-            'orderStatus': {'$ne': 'CANCELLED'},
-            'orderDate': {'$gte': start_date, '$lte': end_date}
-        }))
+    'restaurant': restaurant_id,
+    'orderStatus': {'$nin': ['CANCELLED', 'PENDING']},
+    'orderDate': {'$gte': start_date, '$lte': end_date}
+}))
         restaurant_total_orders = len(orders)
         restaurant_total_revenue = sum(order['orderAmount'] for order in orders if 'orderAmount' in order)
 
