@@ -3,7 +3,8 @@ name: Report Automation
 on:
   workflow_dispatch:  # Allows manual triggering
   schedule:
-    - cron: '0 * * * *'  # Runs every minute for testing
+    - cron: '0 16 * * *'  # Runs at 4:00 PM UTC (6:00 PM Egypt time) every day
+    - cron: '0 23 * * *'  # Runs at 11:00 PM UTC (1:00 AM Egypt time) every day
 
 jobs:
   run-script:
