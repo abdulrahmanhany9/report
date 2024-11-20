@@ -75,7 +75,7 @@ def generate_html_report(data):
                     font-size: 28px;
                     color: #007bff;
                 }}
-                .summary, .today-summary {{
+                .summary, .today-summary, .month-summary {{
                     margin-top: 20px;
                     font-size: 16px;
                     line-height: 1.5;
@@ -100,7 +100,6 @@ def generate_html_report(data):
                     <h2 class="title">Business Performance Report</h2>
                 </div>
 
-                <!-- Full Summary -->
                 <div class="summary">
                     <h3>Full Report (From Start to Now)</h3>
                     <p>Total Active Restaurants: <span class="highlight">{data['total_restaurants']}</span></p>
@@ -111,7 +110,14 @@ def generate_html_report(data):
                     <p>Average Order Value: <span class="highlight">{data['avg_order_value']:.2f} L.E</span></p>
                 </div>
 
-                <!-- Today's Summary -->
+                <div class="month-summary">
+                    <h3>Current Month's Report</h3>
+                    <p>Total Orders: <span class="highlight">{data['total_orders_month']}</span></p>
+                    <p>Total Revenue: <span class="highlight">{data['total_revenue_month']:.2f} L.E</span></p>
+                    <p>Your Personal Revenue: <span class="highlight">{data['personal_revenue_month']:.2f} L.E</span></p>
+                    <p>Average Order Value: <span class="highlight">{data['avg_order_value_month']:.2f} L.E</span></p>
+                </div>
+
                 <div class="today-summary">
                     <h3>Today's Report (11:00 AM to 2:45 AM)</h3>
                     <p>New Users Today: <span class="highlight">{data['total_new_users']}</span></p>
@@ -132,61 +138,82 @@ def generate_html_report(data):
 
 # Function to fetch and process data
 def fetch_report_data(start_date, end_date):
-    # Calculate the start and end times for today's report
     now = datetime.now(egypt_tz)
+
+    # Calculate the start and end times for today's report
     if now.hour >= 11:
         today_start = now.replace(hour=11, minute=0, second=0, microsecond=0)
         today_end = (today_start + timedelta(days=1)).replace(hour=2, minute=45, second=59, microsecond=999999)
     else:
-        # Before 11 AM, the reporting period is still part of the previous day
         today_start = (now - timedelta(days=1)).replace(hour=11, minute=0, second=0, microsecond=0)
         today_end = today_start + timedelta(hours=15, minutes=45)
 
-    # Fetch full report data from the specified start_date to the end_date
+    # Calculate the start of the current month
+    month_start = egypt_tz.localize(datetime(now.year, now.month, 1, 0, 0, 0))
+    month_end = (month_start + timedelta(days=32)).replace(day=1, hour=0, minute=0, second=0, microsecond=0) - timedelta(seconds=1)
+
+    # Fetch data for full report
     total_restaurants = db['restaurants'].count_documents({'isActive': True})
     total_users = db['users'].count_documents({})
     total_new_users = db['users'].count_documents({'createdAt': {'$gte': today_start, '$lte': today_end}})
 
+    # Variables for storing cumulative data
     total_orders = 0
-    total_orders_today = 0
     total_revenue = 0
+    total_orders_today = 0
     total_revenue_today = 0
+    total_orders_month = 0
+    total_revenue_month = 0
 
-    # Iterate over restaurants for both full and today's data
+    # Iterate over restaurants
     restaurants = db['restaurants'].find({'isActive': True})
     for restaurant in restaurants:
         restaurant_id = restaurant['_id']
 
-        # Full report data (from start_date to end_date)
-        orders = list(db['orders'].find({
-    'restaurant': restaurant_id,
-    'orderStatus': {'$nin': ['CANCELLED', 'PENDING']},
-    'orderDate': {'$gte': start_date, '$lte': end_date}
-}))
-        restaurant_total_orders = len(orders)
+        # Full report data
+        orders = db['orders'].find({
+            'restaurant': restaurant_id,
+            'orderStatus': {'$nin': ['CANCELLED', 'PENDING']},
+            'orderDate': {'$gte': start_date, '$lte': end_date}
+        })
+        restaurant_total_orders = orders.count()
         restaurant_total_revenue = sum(order['orderAmount'] for order in orders if 'orderAmount' in order)
 
-        # Today's report data (from today_start to today_end)
-        today_orders = list(db['orders'].find({
+        # Today's data
+        today_orders = db['orders'].find({
             'restaurant': restaurant_id,
             'orderStatus': {'$ne': 'CANCELLED'},
             'orderDate': {'$gte': today_start, '$lte': today_end}
-        }))
-        restaurant_total_orders_today = len(today_orders)
+        })
+        restaurant_total_orders_today = today_orders.count()
         restaurant_total_revenue_today = sum(order['orderAmount'] for order in today_orders if 'orderAmount' in order)
 
-        total_orders += restaurant_total_orders
-        total_orders_today += restaurant_total_orders_today
-        total_revenue += restaurant_total_revenue
-        total_revenue_today += restaurant_total_revenue_today
+        # Current month's data
+        month_orders = db['orders'].find({
+            'restaurant': restaurant_id,
+            'orderStatus': {'$ne': 'CANCELLED'},
+            'orderDate': {'$gte': month_start, '$lte': month_end}
+        })
+        restaurant_total_orders_month = month_orders.count()
+        restaurant_total_revenue_month = sum(order['orderAmount'] for order in month_orders if 'orderAmount' in order)
 
-    # Calculate personal revenue for full report and today's report
+        # Aggregate totals
+        total_orders += restaurant_total_orders
+        total_revenue += restaurant_total_revenue
+        total_orders_today += restaurant_total_orders_today
+        total_revenue_today += restaurant_total_revenue_today
+        total_orders_month += restaurant_total_orders_month
+        total_revenue_month += restaurant_total_revenue_month
+
+    # Calculate personal revenue
     personal_revenue_full = total_revenue * 0.01 * 0.25
     personal_revenue_today = total_revenue_today * 0.01 * 0.25
+    personal_revenue_month = total_revenue_month * 0.01 * 0.25
 
-    # Average order values
+    # Calculate average order value
     avg_order_value = total_revenue / total_orders if total_orders > 0 else 0
     avg_order_value_today = total_revenue_today / total_orders_today if total_orders_today > 0 else 0
+    avg_order_value_month = total_revenue_month / total_orders_month if total_orders_month > 0 else 0
 
     return {
         'total_restaurants': total_restaurants,
@@ -199,9 +226,12 @@ def fetch_report_data(start_date, end_date):
         'total_revenue_today': total_revenue_today,
         'personal_revenue_today': personal_revenue_today,
         'avg_order_value': avg_order_value,
-        'avg_order_value_today': avg_order_value_today
+        'avg_order_value_today': avg_order_value_today,
+        'total_orders_month': total_orders_month,
+        'total_revenue_month': total_revenue_month,
+        'personal_revenue_month': personal_revenue_month,
+        'avg_order_value_month': avg_order_value_month
     }
-
 # Function to run the report generation and sending process
 def run_report(start_date_str):
     # Parse the start date string
