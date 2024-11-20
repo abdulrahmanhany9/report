@@ -176,7 +176,7 @@ def fetch_report_data(start_date, end_date):
             'orderStatus': {'$nin': ['CANCELLED', 'PENDING']},
             'orderDate': {'$gte': start_date, '$lte': end_date}
         })
-        restaurant_total_orders = orders.count()
+        restaurant_total_orders = len(list(orders))
         restaurant_total_revenue = sum(order['orderAmount'] for order in orders if 'orderAmount' in order)
 
         # Today's data
@@ -185,7 +185,7 @@ def fetch_report_data(start_date, end_date):
             'orderStatus': {'$ne': 'CANCELLED'},
             'orderDate': {'$gte': today_start, '$lte': today_end}
         })
-        restaurant_total_orders_today = today_orders.count()
+        restaurant_total_orders_today = len(list(today_orders))
         restaurant_total_revenue_today = sum(order['orderAmount'] for order in today_orders if 'orderAmount' in order)
 
         # Current month's data
@@ -194,7 +194,7 @@ def fetch_report_data(start_date, end_date):
             'orderStatus': {'$ne': 'CANCELLED'},
             'orderDate': {'$gte': month_start, '$lte': month_end}
         })
-        restaurant_total_orders_month = month_orders.count()
+        restaurant_total_orders_month = len(list(month_orders))
         restaurant_total_revenue_month = sum(order['orderAmount'] for order in month_orders if 'orderAmount' in order)
 
         # Aggregate totals
